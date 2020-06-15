@@ -1,0 +1,29 @@
+version: '3.4'
+services:
+  postgres:
+    image: postgres:12
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+  web:
+    build:
+      context: .
+    env_file: .env
+    environment:
+      DATABASE_URL: "postgres://postgres:postgres@postgres/main"
+      RAILS_ENV: production
+    depends_on:
+      - postgres
+    ports:
+      - "3000:3000"
+  test:
+    build:
+      context: .
+      target: test
+    command: "bundle exec rake db:create db:setup spec bundle:audit"
+    env_file: .env.test
+    environment:
+      DATABASE_URL: "postgres://postgres:postgres@postgres/test"
+      RAILS_ENV: test
+    depends_on:
+      - postgres

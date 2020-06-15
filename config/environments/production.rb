@@ -1,4 +1,3 @@
-require Rails.root.join("config/smtp")
 Rails.application.configure do
   if ENV.fetch("HEROKU_APP_NAME", "").include?("staging-pr-")
     ENV["APPLICATION_HOST"] = ENV["HEROKU_APP_NAME"] + ".herokuapp.com"
@@ -10,13 +9,12 @@ Rails.application.configure do
   config.action_controller.perform_caching = true
   config.public_file_server.enabled = ENV['RAILS_SERVE_STATIC_FILES'].present?
   config.assets.compile = false
-  config.action_controller.asset_host = ENV.fetch("ASSET_HOST", ENV.fetch("APPLICATION_HOST"))
   config.active_storage.service = :local
   config.log_level = :debug
   config.log_tags = [ :request_id ]
   config.action_mailer.perform_caching = false
   config.action_mailer.delivery_method = :smtp
-  config.action_mailer.smtp_settings = SMTP_SETTINGS
+
   config.i18n.fallbacks = true
   config.active_support.deprecation = :notify
   config.log_formatter = ::Logger::Formatter.new
@@ -26,12 +24,25 @@ Rails.application.configure do
     config.logger    = ActiveSupport::TaggedLogging.new(logger)
   end
   config.active_record.dump_schema_after_migration = false
-  config.middleware.use Rack::CanonicalHost, ENV.fetch("APPLICATION_HOST")
   config.middleware.use Rack::Deflater
   config.public_file_server.headers = {
     "Cache-Control" => "public, max-age=31557600",
   }
-  config.action_mailer.default_url_options = { host: ENV.fetch("APPLICATION_HOST") }
-  config.action_mailer.asset_host = ENV.fetch("ASSET_HOST", ENV.fetch("APPLICATION_HOST"))
   config.force_ssl = true
+
+  unless ENV["PRECOMPILE"].present?
+    config.action_mailer.smtp_settings = {
+      address: ENV.fetch("SMTP_ADDRESS"), # example: "smtp.sendgrid.net"
+      authentication: :plain,
+      domain: ENV.fetch("SMTP_DOMAIN"), # example: "heroku.com"
+      enable_starttls_auto: true,
+      password: ENV.fetch("SMTP_PASSWORD"),
+      port: "587",
+      user_name: ENV.fetch("SMTP_USERNAME")
+    }
+    config.middleware.use Rack::CanonicalHost, ENV.fetch("APPLICATION_HOST")
+    config.action_mailer.default_url_options = { host: ENV.fetch("APPLICATION_HOST") }
+    config.action_mailer.asset_host = ENV.fetch("ASSET_HOST", ENV.fetch("APPLICATION_HOST"))
+    config.action_controller.asset_host = ENV.fetch("ASSET_HOST", ENV.fetch("APPLICATION_HOST"))
+  end
 end

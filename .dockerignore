@@ -1,0 +1,12 @@
+.ctags
+docker-compose.yml
+Dockerfile
+docs
+.env
+.git
+node_modules
+Procfile
+public/packs
+public/packs-test
+terraform
+tmp
