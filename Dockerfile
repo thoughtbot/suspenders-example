@@ -2,35 +2,46 @@ FROM ruby:2.6.3-slim AS build-base
 
 ENV LANG en_US.UTF-8
 
-RUN apt-get update -qq && \
-  apt-get install -y \
+RUN apt-get update -qq \
+  && apt-get install -y \
   build-essential \
   git \
   libpq-dev \
-  nodejs \
-  yarnpkg
+  curl \
+  && curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | \
+  apt-key add - \
+  && echo "deb https://dl.yarnpkg.com/debian/ stable main" > \
+  /etc/apt/sources.list.d/yarn.list \
+  && apt-get update -qq \
+  && apt-get install -y yarn \
+  && apt-get clean \
+  && rm -rf /var/lib/apt/lists/*
 
 RUN mkdir /app
 WORKDIR /app
 
 COPY Gemfile* /app/
 RUN bundle config --global frozen 1 \
- && bundle install -j4 --retry 3 \
+ && bundle install --without "development test" -j4 --retry 3 \
  && rm -rf /usr/local/bundle/cache/*.gem \
  && find /usr/local/bundle/gems/ -name "*.c" -delete \
  && find /usr/local/bundle/gems/ -name "*.o" -delete
 
-RUN ln -s /usr/bin/yarnpkg /usr/bin/yarn
 COPY package.json yarn.lock /app/
 RUN yarn install
 
+FROM build-base AS test
+
 COPY . /app
 
-FROM build-base AS test
+RUN bundle install -j4 --retry 3 --with "development test" \
+ && rm -rf /usr/local/bundle/cache/*.gem \
+ && find /usr/local/bundle/gems/ -name "*.c" -delete \
+ && find /usr/local/bundle/gems/ -name "*.o" -delete
 
 FROM build-base AS build-release
 
-RUN bundle config --global set without "development test" && bundle clean --force
+COPY . /app
 
 # The SECRET_KEY_BASE here isn't used. Precomiling assets doesn't use your
 # secret key, but Rails will fail to initialize if it isn't set.
@@ -42,9 +53,10 @@ FROM ruby:2.6.3-slim AS release
 
 ENV LANG en_US.UTF-8
 
-RUN apt-get update -qq && \
-  apt-get install -y \
-  postgresql-client
+RUN apt-get update -qq \
+  && apt-get install -y postgresql-client \
+  && apt-get clean \
+  && rm -rf /var/lib/apt/lists/*
 
 RUN groupadd --gid 1000 app && \
   useradd --uid 1000 --no-log-init --create-home --gid app app
