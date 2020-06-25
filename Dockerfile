@@ -1,4 +1,4 @@
-FROM ruby:2.6.3-slim AS compile
+FROM ruby:2.6.6-slim AS compile
 
 ENV LANG en_US.UTF-8
 
