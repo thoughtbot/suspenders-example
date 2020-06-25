@@ -27,6 +27,10 @@ jobs:
           command: docker load -i tmp/layercache/compile.tar || true
 
       - run:
+          name: Project Listing
+          command: ls -lah
+
+      - run:
           name: Build compile stage
           command: |
             docker build . \
