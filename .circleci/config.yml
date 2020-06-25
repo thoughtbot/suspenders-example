@@ -135,7 +135,7 @@ jobs:
 
       - run:
           name: Database setup
-          command: RAILS_ENV=development bin/setup
+          command: bin/rails db:setup
 
       - run:
           name: Run tests
