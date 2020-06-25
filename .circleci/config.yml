@@ -15,11 +15,11 @@ jobs:
             - v1-compile-{{ .Branch }}-
             - v1-compile-
           paths:
-            /layercache/compile.tar
+            tmp/layercache/compile.tar
 
       - run:
           name: Load compile layer
-          command: docker load -i /layercache/compile.tar || true
+          command: docker load -i tmp/layercache/compile.tar || true
 
       - run:
           name: Build compile stage
@@ -32,13 +32,13 @@ jobs:
       - run:
           name: Save compile layer
           command: |
-            mkdir -p /layercache
-            docker save app:compile -o /layercache/compile.tar
+            mkdir -p tmp/layercache
+            docker save app:compile -o tmp/layercache/compile.tar
 
       - save_cache:
           key: v1-compile-{{ .Branch }}-{{ checksum "Dockerfile" }}
           paths:
-            - /layercache/compile.tar
+            - tmp/layercache/compile.tar
 
       - restore_cache:
           keys:
@@ -46,11 +46,11 @@ jobs:
             - v1-compile-{{ .Branch }}-
             - v1-compile-
           paths:
-            /layercache/release.tar
+            tmp/layercache/release.tar
 
       - run:
           name: Load release layer
-          command: docker load -i /layercache/release.tar || true
+          command: docker load -i tmp/layercache/release.tar || true
 
       - run:
           name: Build release stage
@@ -63,13 +63,13 @@ jobs:
       - run:
           name: Save release layer
           command: |
-            mkdir -p /layercache
-            docker save app:release -o /layercache/release.tar
+            mkdir -p tmp/layercache
+            docker save app:release -o tmp/layercache/release.tar
 
       - save_cache:
           key: v1-release-{{ .Branch }}-{{ checksum "Dockerfile" }}
           paths:
-            - /layercache/release.tar
+            - tmp/layercache/release.tar
 
       - run:
           name: Tag images
