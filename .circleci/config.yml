@@ -96,7 +96,6 @@ jobs:
     docker:
       - image: circleci/ruby:2.6.6-node-browsers
         environment:
-          MAIL_SENDER: user@example.com
           RAILS_ENV: test
           DATABASE_URL: postgres://test:test@localhost/test
       - image: circleci/postgres:10.5
