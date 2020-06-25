@@ -84,7 +84,7 @@ jobs:
           MAIL_SENDER: user@example.com
           RAILS_ENV: test
           DATABASE_URL: postgres://test:test@localhost/test
-      - image: circleci/postgres:10.5-postgres
+      - image: circleci/postgres:10.5
         environment:
            POSTGRES_USER: test
            POSTGRES_DB: test
