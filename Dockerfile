@@ -1,4 +1,4 @@
-FROM ruby:2.6.3-slim AS build-base
+FROM ruby:2.6.3-slim AS compile
 
 ENV LANG en_US.UTF-8
 
@@ -30,17 +30,6 @@ RUN bundle config --global frozen 1 \
 COPY package.json yarn.lock /app/
 RUN yarn install
 
-FROM build-base AS test
-
-COPY . /app
-
-RUN bundle install -j4 --retry 3 --with "development test" \
- && rm -rf /usr/local/bundle/cache/*.gem \
- && find /usr/local/bundle/gems/ -name "*.c" -delete \
- && find /usr/local/bundle/gems/ -name "*.o" -delete
-
-FROM build-base AS build-release
-
 COPY . /app
 
 # The SECRET_KEY_BASE here isn't used. Precomiling assets doesn't use your
@@ -49,7 +38,7 @@ RUN RAILS_ENV=production PRECOMPILE=true SECRET_KEY_BASE=no \
   bundle exec rake assets:precompile
 RUN rm -rf node_modules tmp/cache spec
 
-FROM ruby:2.6.3-slim AS release
+FROM ruby:2.6.3-slim
 
 ENV LANG en_US.UTF-8
 
@@ -62,8 +51,8 @@ RUN groupadd --gid 1000 app && \
   useradd --uid 1000 --no-log-init --create-home --gid app app
 USER app
 
-COPY --from=build-release /usr/local/bundle/ /usr/local/bundle/
-COPY --from=build-release --chown=app:app /app /app
+COPY --from=compile /usr/local/bundle/ /usr/local/bundle/
+COPY --from=compile --chown=app:app /app /app
 
 ENV RACK_ENV=production
 ENV RAILS_ENV=production
@@ -73,5 +62,3 @@ ENV EXECJS_RUNTIME Disabled
 
 WORKDIR /app
 CMD bundle exec puma -p $PORT -C /app/config/puma.rb
-
-FROM release

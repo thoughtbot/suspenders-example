@@ -9,12 +9,73 @@ jobs:
 
       - checkout
 
+      - restore_cache:
+          keys:
+            - v1-compile-{{ .Branch }}-{{ checksum "Dockerfile" }}
+            - v1-compile-{{ .Branch }}-
+            - v1-compile-
+          paths:
+            /layercache/compile.tar
+
       - run:
-          name: Build Docker image
+          name: Load compile layer
+          command: docker load -i /layercache/compile.tar || true
+
+      - run:
+          name: Build compile stage
           command: |
-            docker build . --tag app:latest
-            docker tag app:latest app:${CIRCLE_BRANCH}
-            docker tag app:latest app:${CIRCLE_SHA1}
+            docker build . \
+              --cache-from app:compile \
+              --tag app:compile \
+              --target compile
+
+      - run:
+          name: Save compile layer
+          command: |
+            mkdir -p /layercache
+            docker save app:compile -o /layercache/compile.tar
+
+      - save_cache:
+          key: v1-compile-{{ .Branch }}-{{ checksum "Dockerfile" }}
+          paths:
+            - /layercache/compile.tar
+
+      - restore_cache:
+          keys:
+            - v1-compile-{{ .Branch }}-{{ checksum "Dockerfile" }}
+            - v1-compile-{{ .Branch }}-
+            - v1-compile-
+          paths:
+            /layercache/release.tar
+
+      - run:
+          name: Load release layer
+          command: docker load -i /layercache/release.tar || true
+
+      - run:
+          name: Build release stage
+          command: |
+            docker build . \
+              --cache-from app:compile \
+              --cache-from app:release \
+              --tag app:release
+
+      - run:
+          name: Save release layer
+          command: |
+            mkdir -p /layercache
+            docker save app:release -o /layercache/release.tar
+
+      - save_cache:
+          key: v1-release-{{ .Branch }}-{{ checksum "Dockerfile" }}
+          paths:
+            - /layercache/release.tar
+
+      - run:
+          name: Tag images
+          command: |
+            docker tag app:release app:${CIRCLE_BRANCH}
+            docker tag app:release app:${CIRCLE_SHA1}
 
   test:
     docker:
@@ -37,9 +98,9 @@ jobs:
 
       - restore_cache:
           keys:
-            - bundle-{{ .Branch }}-{{ checksum "Gemfile.lock" }}
-            - bundle-{{ .Branch }}-
-            - bundle-
+            - v1-bundle-{{ .Branch }}-{{ checksum "Gemfile.lock" }}
+            - v1-bundle-{{ .Branch }}-
+            - v1-bundle-
 
       - run:
           name: Bundle Install
@@ -49,7 +110,7 @@ jobs:
                            --jobs=3
 
       - save_cache:
-          key: bundle-{{ .Branch }}-{{ checksum "Gemfile.lock" }}
+          key: v1-bundle-{{ .Branch }}-{{ checksum "Gemfile.lock" }}
           paths:
             - vendor/bundle
 
@@ -74,6 +135,6 @@ jobs:
 
 workflows:
   version: 2
-  build-deploy:
+  build-test:
     jobs:
       - build
