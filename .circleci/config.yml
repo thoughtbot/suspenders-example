@@ -42,9 +42,9 @@ jobs:
 
       - restore_cache:
           keys:
-            - v1-compile-{{ .Branch }}-{{ checksum "Dockerfile" }}
-            - v1-compile-{{ .Branch }}-
-            - v1-compile-
+            - v1-release-{{ .Branch }}-{{ checksum "Dockerfile" }}
+            - v1-release-{{ .Branch }}-
+            - v1-release-
           paths:
             tmp/layercache/release.tar
 
