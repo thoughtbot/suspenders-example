@@ -7,7 +7,7 @@ orbs:
 jobs:
   build:
     docker:
-      - image: cimg/base:2020.01
+      - image: circleci/python:3.8.3
 
     steps:
       - setup_remote_docker
@@ -79,8 +79,8 @@ jobs:
       - run:
           name: Tag images
           command: |
-            docker tag app:release app:${CIRCLE_BRANCH}
-            docker tag app:release app:${CIRCLE_SHA1}
+            docker tag app:release ${AWS_ECR_ACCOUNT_URL}/${AWS_ECR_AUTODEPLOY_REPO}:${CIRCLE_BRANCH}
+            docker tag app:release ${AWS_ECR_ACCOUNT_URL}/${AWS_ECR_AUTODEPLOY_REPO}:${CIRCLE_SHA1}
 
       - aws-cli/install
 
