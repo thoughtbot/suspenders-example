@@ -91,7 +91,7 @@ jobs:
 
       - aws-ecr/push-image:
           repo: ${AWS_ECR_AUTODEPLOY_REPO}
-          tag: ${CIRCLE_BRANCH}
+          tag: "${CIRCLE_BRANCH},${CIRCLE_SHA1}"
 
   test:
     docker:
@@ -171,16 +171,21 @@ jobs:
       - run:
           name: Wait for migrations
           command: |
+            echo "Finding task for ${CIRCLE_SHA1}"
             ARN=$(aws ecs list-tasks \
               --cluster example-staging \
               --started-by "${CIRCLE_SHA1}" \
               --query 'tasks[].arn' \
               --output text)
+            echo "Found: $ARN"
 
+            echo "Waiting..."
             aws ecs wait tasks-stopped \
               --cluster example-staging \
               --tasks "$ARN"
+            echo "Task stopped."
 
+            echo "Checking..."
             EXIT_CODE=$(aws ecs describe-tasks \
               --cluster example-staging \
               --tasks "$ARN" \
@@ -188,6 +193,8 @@ jobs:
               --output text)
 
             if [ "$EXIT_CODE" != "0" ]; then
+              echo "Migrations complete"
+            else
               echo "Migrations failed"
               exit 1
             fi
