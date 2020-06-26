@@ -3,6 +3,7 @@ version: 2.1
 orbs:
   aws-cli: circleci/aws-cli@0.1.13
   aws-ecr: circleci/aws-ecr@6.5.0
+  aws-ecs: circleci/aws-ecs@1.2.0
 
 jobs:
   build:
@@ -25,10 +26,6 @@ jobs:
       - run:
           name: Load compile layer
           command: docker load -i tmp/layercache/compile.tar || true
-
-      - run:
-          name: Project Listing
-          command: ls -lah
 
       - run:
           name: Build compile stage
@@ -147,10 +144,31 @@ jobs:
       - store_artifacts:
            path: coverage
 
+  deploy-web:
+    docker:
+      - image: circleci/python:3.8.3
+
+    steps:
+      - aws-cli/install
+
+      - aws-cli/configure
+
+      - aws-ecs/update-service:
+          family: '${AWS_ECS_TASK_FAMILY}'
+          cluster-name: '${AWS_ECS_CLUSTER_NAME}'
+          container-image-name-updates: 'container=${AWS_ECS_CONTAINER_NAME}-service,tag=${CIRCLE_SHA1}'
+          service-name: '${AWS_ECS_SERVICE_NAME}'
+          verify-revision-is-deployed: true
+
 workflows:
   version: 2
-  build-test:
+  build-test-deploy:
     jobs:
       - build:
           context: suspenders-example-build
       - test
+      - deploy-web:
+          context: suspenders-example-staging-deploy-web
+          requires:
+            - build
+            - test

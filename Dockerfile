@@ -29,14 +29,15 @@ RUN bundle config --global frozen 1 \
 
 COPY package.json yarn.lock /app/
 RUN yarn install
+RUN ls -a1
 
 COPY . /app
 
 # The SECRET_KEY_BASE here isn't used. Precomiling assets doesn't use your
 # secret key, but Rails will fail to initialize if it isn't set.
 RUN RAILS_ENV=production PRECOMPILE=true SECRET_KEY_BASE=no \
-  bundle exec rake assets:precompile
-RUN rm -rf node_modules tmp/cache spec
+  bundle exec rake assets:precompile && \
+  rm -rf node_modules tmp/cache spec
 
 FROM ruby:2.6.3-slim
 
