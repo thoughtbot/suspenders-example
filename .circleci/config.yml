@@ -192,7 +192,7 @@ jobs:
               --query 'tasks[0].containers[0].exitCode' \
               --output text)
 
-            if [ "$EXIT_CODE" != "0" ]; then
+            if [ "$EXIT_CODE" == "0" ]; then
               echo "Migrations complete"
             else
               echo "Migrations failed"
