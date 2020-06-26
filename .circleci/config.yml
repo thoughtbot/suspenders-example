@@ -175,7 +175,7 @@ jobs:
             ARN=$(aws ecs list-tasks \
               --cluster example-staging \
               --started-by "${CIRCLE_SHA1}" \
-              --query 'tasks[].arn' \
+              --query 'taskArns[]' \
               --output text)
             echo "Found: $ARN"
 
