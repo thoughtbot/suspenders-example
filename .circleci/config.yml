@@ -157,6 +157,10 @@ jobs:
 
       - aws-cli/configure
 
+      - aws-ecs/update-task-definition:
+          family: << parameters.family >>
+          container-image-name-updates: 'container=example,tag=${CIRCLE_SHA1}'
+
       - aws-ecs/run-task:
           cluster: 'example-staging'
           subnet-ids: '${AWS_SUBNET_IDS}'
@@ -171,7 +175,7 @@ jobs:
               --cluster example-staging \
               --started-by "${CIRCLE_SHA1}" \
               --query 'tasks[].arn' \
-              --output text
+              --output text)
 
             aws ecs wait tasks-stopped --tasks "$ARN"
 
