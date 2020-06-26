@@ -39,7 +39,7 @@ RUN RAILS_ENV=production PRECOMPILE=true SECRET_KEY_BASE=no \
   bundle exec rake assets:precompile && \
   rm -rf node_modules tmp/cache spec
 
-FROM ruby:2.6.3-slim
+FROM ruby:2.6.6-slim
 
 ENV LANG en_US.UTF-8
 
