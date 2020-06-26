@@ -1,11 +1,9 @@
 .ctags
-docker-compose.yml
-Dockerfile
-docs
 .env
 .git
-node_modules
 Procfile
+docs
+node_modules
 public/packs
 public/packs-test
 terraform
