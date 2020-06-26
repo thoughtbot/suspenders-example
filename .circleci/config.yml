@@ -177,7 +177,9 @@ jobs:
               --query 'tasks[].arn' \
               --output text)
 
-            aws ecs wait tasks-stopped --tasks "$ARN"
+            aws ecs wait tasks-stopped \
+              --cluster example-staging \
+              --tasks "$ARN"
 
             EXIT_CODE=$(aws ecs describe-tasks \
               --cluster example-staging \
@@ -224,11 +226,13 @@ workflows:
             - build
             - test
       - update-service:
+          name: deploy-web
           family: example-staging-web
           context: suspenders-example-staging-deploy
           requires:
             - migrate
       - update-service:
+          name: deploy-worker
           family: example-staging-worker
           context: suspenders-example-staging-deploy
           requires:
