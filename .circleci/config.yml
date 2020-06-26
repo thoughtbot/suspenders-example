@@ -204,6 +204,9 @@ jobs:
       family:
         type: string
 
+      service:
+        type: string
+
     docker:
       - image: circleci/python:3.8.3
 
@@ -216,7 +219,7 @@ jobs:
           family: << parameters.family >>
           cluster-name: 'example-staging'
           container-image-name-updates: 'container=example,tag=${CIRCLE_SHA1}'
-          service-name: 'web'
+          service-name: << parameters.service >>
           verify-revision-is-deployed: true
 
 workflows:
@@ -235,12 +238,14 @@ workflows:
       - update-service:
           name: deploy-web
           family: example-staging-web
+          service: web
           context: suspenders-example-staging-deploy
           requires:
             - migrate
       - update-service:
           name: deploy-worker
           family: example-staging-worker
+          service: worker
           context: suspenders-example-staging-deploy
           requires:
             - migrate
