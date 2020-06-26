@@ -144,7 +144,53 @@ jobs:
       - store_artifacts:
            path: coverage
 
-  deploy-web:
+  migrate:
+    parameters:
+      family:
+        type: string
+
+    docker:
+      - image: circleci/python:3.8.3
+
+    steps:
+      - aws-cli/install
+
+      - aws-cli/configure
+
+      - aws-ecs/run-task:
+          cluster: 'example-staging'
+          subnet-ids: '${AWS_SUBNET_IDS}'
+          security-group-ids: '${AWS_SECURITY_GROUP_IDS}'
+          started-by: '${CIRCLE_SHA1}'
+          task-definition: << parameters.family >>
+
+      - run:
+          name: Wait for migrations
+          command: |
+            ARN=$(aws ecs list-tasks \
+              --cluster example-staging \
+              --started-by "${CIRCLE_SHA1}" \
+              --query 'tasks[].arn' \
+              --output text
+
+            aws ecs wait tasks-stopped --tasks "$ARN"
+
+            EXIT_CODE=$(aws ecs describe-tasks \
+              --cluster example-staging \
+              --tasks "$ARN" \
+              --query 'tasks[0].containers[0].exitCode' \
+              --output text)
+
+            if [ "$EXIT_CODE" != "0" ]; then
+              echo "Migrations failed"
+              exit 1
+            fi
+
+  update-service:
+    parameters:
+      family:
+        type: string
+
     docker:
       - image: circleci/python:3.8.3
 
@@ -154,10 +200,10 @@ jobs:
       - aws-cli/configure
 
       - aws-ecs/update-service:
-          family: '${AWS_ECS_TASK_FAMILY}'
-          cluster-name: '${AWS_ECS_CLUSTER_NAME}'
-          container-image-name-updates: 'container=${AWS_ECS_CONTAINER_NAME}-service,tag=${CIRCLE_SHA1}'
-          service-name: '${AWS_ECS_SERVICE_NAME}'
+          family: << parameters.family >>
+          cluster-name: 'example-staging'
+          container-image-name-updates: 'container=example,tag=${CIRCLE_SHA1}'
+          service-name: 'web'
           verify-revision-is-deployed: true
 
 workflows:
@@ -167,8 +213,19 @@ workflows:
       - build:
           context: suspenders-example-build
       - test
-      - deploy-web:
-          context: suspenders-example-staging-deploy-web
+      - migrate:
+          family: example-staging-migrate
+          context: suspenders-example-staging-deploy
           requires:
             - build
             - test
+      - update-service:
+          family: example-staging-web
+          context: suspenders-example-staging-deploy
+          requires:
+            - migrate
+      - update-service:
+          family: example-staging-worker
+          context: suspenders-example-staging-deploy
+          requires:
+            - migrate
