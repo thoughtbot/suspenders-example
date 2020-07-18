@@ -88,11 +88,11 @@ jobs:
     - aws-cli/configure
     - aws-ecr/ecr-login
     - run:
-        command: "export IMAGE_URL=\"$AWS_ECR_ACCOUNT_URL/example-app/example-app\"
-          && echo \"$IMAGE_URL\""
+        command: "export IMAGE_URL=\"$AWS_ECR_ACCOUNT_URL/example-app/example-app\""
         name: "Set image URL"
     - run:
-        command: "docker pull $IMAGE_URL:$CIRCLE_BRANCH-compile || true"
+        command: "echo \"$IMAGE_URL:$CIRCLE_BRANCH-compile\" && docker pull $IMAGE_URL:$CIRCLE_BRANCH-compile
+          || true"
         name: "Pull branch build stage"
     - run:
         command: "docker pull $IMAGE_URL:$CIRCLE_SHA1-compile || true"
