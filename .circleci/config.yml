@@ -19,8 +19,8 @@ workflows:
         requires:
         - build
         - test
-        security_group_ids: "sg-059c7f8cb2b14b833,sg-0f950eac5657980cc"
-        subnet_ids: "subnet-002f2eb48f28b63ef,subnet-07dad61c0356168f3,subnet-0109120d07487fa16"
+        security-group-ids: "sg-059c7f8cb2b14b833,sg-0f950eac5657980cc"
+        subnet-ids: "subnet-002f2eb48f28b63ef,subnet-07dad61c0356168f3,subnet-0109120d07487fa16"
     - aws-ecs/deploy-service-update:
         aws-region: "us-east-1"
         cluster-name: example-app-staging
@@ -50,8 +50,8 @@ workflows:
         requires:
         - build
         - test
-        security_group_ids: "sg-07b81a4f255c35866,sg-06711d648c5c13764"
-        subnet_ids: "subnet-0c4acc48a4d865b13,subnet-04129b8e3d26fe08e,subnet-03f7df8859e3c5fbc"
+        security-group-ids: "sg-07b81a4f255c35866,sg-06711d648c5c13764"
+        subnet-ids: "subnet-0c4acc48a4d865b13,subnet-04129b8e3d26fe08e,subnet-03f7df8859e3c5fbc"
     - aws-ecs/deploy-service-update:
         aws-region: "us-east-1"
         cluster-name: example-app-production
@@ -122,9 +122,9 @@ jobs:
         type: string
       family:
         type: string
-      security_group_ids:
+      security-group-ids:
         type: string
-      subnet_ids:
+      subnet-ids:
         type: string
     steps:
     - run:
