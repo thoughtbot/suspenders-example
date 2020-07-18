@@ -77,7 +77,10 @@ workflows:
 jobs:
   build:
     docker:
-    - image: "circleci/python:3.8.3"
+    - environment:
+        AWS_DEFAULT_REGION: "us-east-1"
+        AWS_REGION: "us-east-1"
+      image: "circleci/python:3.8.3"
     steps:
     - setup_remote_docker
     - checkout
