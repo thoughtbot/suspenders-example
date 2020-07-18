@@ -129,9 +129,6 @@ jobs:
   run-task:
     docker:
     - image: "circleci/python:3.8.3"
-    - environment:
-        AWS_DEFAULT_REGION: "<< parameters.aws-region >>"
-        AWS_REGION: "<< parameters.aws-region >>"
     parameters:
       aws-region:
         type: string
