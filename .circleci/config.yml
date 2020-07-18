@@ -1,245 +1,217 @@
-version: 2.1
+version: "2.1"
 
 orbs:
-  aws-cli: circleci/aws-cli@0.1.13
-  aws-ecr: circleci/aws-ecr@6.5.0
-  aws-ecs: circleci/aws-ecs@1.2.0
+  aws-cli: "circleci/aws-cli@0.1.13"
+  aws-ecr: "circleci/aws-ecr@6.5.0"
+  aws-ecs: "circleci/aws-ecs@1.2.0"
+
+workflows:
+  build-test-deploy:
+    jobs:
+    - build:
+        repo: example-app/example-app
+    - test
+    - run-task:
+        aws-region: "us-east-1"
+        cluster: example-app-staging
+        container-name: app
+        family: example-app-staging-migrate
+        name: example-app-staging-migrate
+        requires:
+        - build
+        - test
+        security_group_ids: "sg-059c7f8cb2b14b833,sg-0f950eac5657980cc"
+        subnet_ids: "subnet-002f2eb48f28b63ef,subnet-07dad61c0356168f3,subnet-0109120d07487fa16"
+    - aws-ecs/deploy-service-update:
+        aws-region: "us-east-1"
+        cluster-name: example-app-staging
+        container-image-name-updates: "container=app,tag=$CIRCLE_SHA1"
+        family: example-app-staging-web
+        name: example-app-staging-web
+        requires:
+        - example-app-staging-migrate
+        service-name: web
+        verify-revision-is-deployed: true
+    - aws-ecs/deploy-service-update:
+        aws-region: "us-east-1"
+        cluster-name: example-app-staging
+        container-image-name-updates: "container=app,tag=$CIRCLE_SHA1"
+        family: example-app-staging-worker
+        name: example-app-staging-worker
+        requires:
+        - example-app-staging-migrate
+        service-name: worker
+        verify-revision-is-deployed: true
+    - run-task:
+        aws-region: "us-east-1"
+        cluster: example-app-production
+        container-name: app
+        family: example-app-production-migrate
+        name: example-app-production-migrate
+        requires:
+        - build
+        - test
+        security_group_ids: "sg-07b81a4f255c35866,sg-06711d648c5c13764"
+        subnet_ids: "subnet-0c4acc48a4d865b13,subnet-04129b8e3d26fe08e,subnet-03f7df8859e3c5fbc"
+    - aws-ecs/deploy-service-update:
+        aws-region: "us-east-1"
+        cluster-name: example-app-production
+        container-image-name-updates: "container=app,tag=$CIRCLE_SHA1"
+        family: example-app-production-web
+        name: example-app-production-web
+        requires:
+        - example-app-production-migrate
+        service-name: web
+        verify-revision-is-deployed: true
+    - aws-ecs/deploy-service-update:
+        aws-region: "us-east-1"
+        cluster-name: example-app-production
+        container-image-name-updates: "container=app,tag=$CIRCLE_SHA1"
+        family: example-app-production-worker
+        name: example-app-production-worker
+        requires:
+        - example-app-production-migrate
+        service-name: worker
+        verify-revision-is-deployed: true
+  version: 2
 
 jobs:
   build:
     docker:
-      - image: circleci/python:3.8.3
-
+    - image: "circleci/python:3.8.3"
     steps:
-      - setup_remote_docker
+    - setup_remote_docker
+    - checkout
+    - aws-cli/install
+    - aws-cli/configure
+    - aws-ecr/ecr-login
+    - run:
+        command: "IMAGE_URL=$AWS_ECR_ACCOUNT_URL/$AWS_ECR_AUTODEPLOY_REPO"
+    - run:
+        command: "docker pull $IMAGE_URL:$CIRCLE_BRANCH-compile || true"
+    - run:
+        command: "docker pull $IMAGE_URL:$CIRCLE_SHA1-compile || true"
+    - run:
+        command: "docker build --cache-from $IMAGE_URL:$CIRCLE_BRANCH-compile --cache-from
+          $IMAGE_URL:$CIRCLE_SHA1-compile --target compile --tag $IMAGE_URL:$CIRCLE_SHA1-compile
+          ."
+    - run:
+        command: "docker tag $IMAGE_URL:$CIRCLE_SHA1-compile $IMAGE_URL:$CIRCLE_BRANCH-compile"
+    - aws-ecr/push-image:
+        repo:
+          name: example-app/example-app
+        tag: "$CIRCLE_SHA1-compile,$CIRCLE_BRANCH-compile"
+    - run:
+        command: "docker pull $IMAGE_URL:$CIRCLE_BRANCH || true"
+    - run:
+        command: "docker pull $IMAGE_URL:$CIRCLE_SHA1 || true"
+    - run:
+        command: "docker build --cache-from $IMAGE_URL:$CIRCLE_BRANCH-compile --cache-from
+          $IMAGE_URL:$CIRCLE_SHA1-compile --cache-from $IMAGE_URL:$CIRCLE_BRANCH --cache-from
+          $IMAGE_URL:$CIRCLE_SHA1 --tag $IMAGE_URL:$CIRCLE_SHA1 ."
+    - aws-ecr/push-image:
+        repo:
+          name: example-app/example-app
+        tag: "$CIRCLE_BRANCH,$CIRCLE_SHA1"
+  run-task:
+    docker:
+    - image: "circleci/python:3.8.3"
+    parameters:
+      aws-region:
+        type: string
+      cluster:
+        type: string
+      container-name:
+        type: string
+      family:
+        type: string
+      security_group_ids:
+        type: string
+      subnet_ids:
+        type: string
+    steps:
+    - run:
+        command: |
+          AWS_DEFAULT_REGION=<< parameters.aws-region >>
+          AWS_REGION=<< parameters.aws-region >>
+        name: "Set AWS region"
+    - aws-cli/install
+    - aws-cli/configure
+    - aws-ecs/update-task-definition:
+        container-image-name-updates: "container=<< parameters.container-name >>,tag=${CIRCLE_SHA1}"
+        family: "<< parameters.family >>"
+    - aws-ecs/run-task:
+        cluster: "<< parameters.cluster >>"
+        security-group-ids: "<< parameters.security_group_ids >>"
+        started-by: "${CIRCLE_SHA1}"
+        subnet-ids: "<< parameters.subnet-ids >>"
+        task-definition: "<< parameters.family >>"
+    - run:
+        command: |
+          echo "Finding task for ${CIRCLE_SHA1}"
+          ARN=$(aws ecs list-tasks \
+            --cluster << parameters.cluster >> \
+            --started-by "${CIRCLE_SHA1}" \
+            --query 'taskArns[]' \
+            --output text)
+          echo "Found: $ARN"
 
-      - checkout
+          echo "Waiting..."
+          aws ecs wait tasks-stopped \
+            --cluster << parameters.cluster >> \
+            --tasks "$ARN"
+          echo "Task stopped."
 
-      - restore_cache:
-          keys:
-            - v1-compile-{{ .Branch }}-{{ checksum "Dockerfile" }}
-            - v1-compile-{{ .Branch }}-
-            - v1-compile-
-          paths:
-            tmp/layercache/compile.tar
+          echo "Checking..."
+          EXIT_CODE=$(aws ecs describe-tasks \
+            --cluster << parameters.cluster >> \
+            --tasks "$ARN" \
+            --query 'tasks[0].containers[0].exitCode' \
+            --output text)
 
-      - run:
-          name: Load compile layer
-          command: docker load -i tmp/layercache/compile.tar || true
-
-      - run:
-          name: Build compile stage
-          command: |
-            docker build . \
-              --cache-from app:compile \
-              --tag app:compile \
-              --target compile
-
-      - run:
-          name: Save compile layer
-          command: |
-            mkdir -p tmp/layercache
-            docker save app:compile -o tmp/layercache/compile.tar
-
-      - save_cache:
-          key: v1-compile-{{ .Branch }}-{{ checksum "Dockerfile" }}
-          paths:
-            - tmp/layercache/compile.tar
-
-      - restore_cache:
-          keys:
-            - v1-release-{{ .Branch }}-{{ checksum "Dockerfile" }}
-            - v1-release-{{ .Branch }}-
-            - v1-release-
-          paths:
-            tmp/layercache/release.tar
-
-      - run:
-          name: Load release layer
-          command: docker load -i tmp/layercache/release.tar || true
-
-      - run:
-          name: Build release stage
-          command: |
-            docker build . \
-              --cache-from app:compile \
-              --cache-from app:release \
-              --tag app:release
-
-      - run:
-          name: Save release layer
-          command: |
-            mkdir -p tmp/layercache
-            docker save app:release -o tmp/layercache/release.tar
-
-      - save_cache:
-          key: v1-release-{{ .Branch }}-{{ checksum "Dockerfile" }}
-          paths:
-            - tmp/layercache/release.tar
-
-      - run:
-          name: Tag images
-          command: |
-            docker tag app:release "${AWS_ECR_ACCOUNT_URL}/${AWS_ECR_AUTODEPLOY_REPO}:${CIRCLE_BRANCH}"
-            docker tag app:release "${AWS_ECR_ACCOUNT_URL}/${AWS_ECR_AUTODEPLOY_REPO}:${CIRCLE_SHA1}"
-
-      - aws-ecr/push-image:
-          repo: ${AWS_ECR_AUTODEPLOY_REPO}
-          tag: "${CIRCLE_BRANCH},${CIRCLE_SHA1}"
-
+          if [ "$EXIT_CODE" == "0" ]; then
+            echo "Task complete"
+          else
+            echo "Task failed"
+            exit 1
+          fi
+        name: "Wait for task"
   test:
     docker:
-      - image: circleci/ruby:2.6.6-node-browsers
-        environment:
-          RAILS_ENV: test
-          DATABASE_URL: postgres://test:test@localhost/test
-      - image: circleci/postgres:10.5
-        environment:
-           POSTGRES_USER: test
-           POSTGRES_DB: test
-           POSTGRES_PASSWORD: test
+    - environment:
+        DATABASE_URL: "postgres://test:test@localhost/test"
+        RAILS_ENV: test
+      image: "circleci/ruby:2.6.6-node-browsers"
+    - environment:
+        POSTGRES_DB: test
+        POSTGRES_PASSWORD: test
+        POSTGRES_USER: test
+      image: "circleci/postgres:10.5"
     steps:
-      - checkout
-
-      - run:
-          name: Which Bundler?
-          command: bundle -v
-
-      - restore_cache:
-          keys:
-            - v1-bundle-{{ .Branch }}-{{ checksum "Gemfile.lock" }}
-            - v1-bundle-{{ .Branch }}-
-            - v1-bundle-
-
-      - run:
-          name: Bundle Install
-          command: |
-            bundle install --deployment \
-                           --retry=3 \
-                           --jobs=3
-
-      - save_cache:
-          key: v1-bundle-{{ .Branch }}-{{ checksum "Gemfile.lock" }}
-          paths:
-            - vendor/bundle
-
-      - run:
-          name: Wait for database
-          command: dockerize -wait tcp://localhost:5432 -timeout 1m
-
-      - run:
-          name: Database setup
-          command: bin/rails db:setup
-
-      - run:
-          name: Run tests
-          command: COVERAGE=true bundle exec rake
-
-      - store_artifacts:
-           path: coverage
-
-  migrate:
-    parameters:
-      family:
-        type: string
-
-    docker:
-      - image: circleci/python:3.8.3
-
-    steps:
-      - aws-cli/install
-
-      - aws-cli/configure
-
-      - aws-ecs/update-task-definition:
-          family: << parameters.family >>
-          container-image-name-updates: 'container=example,tag=${CIRCLE_SHA1}'
-
-      - aws-ecs/run-task:
-          cluster: 'example-staging'
-          subnet-ids: '${AWS_SUBNET_IDS}'
-          security-group-ids: '${AWS_SECURITY_GROUP_IDS}'
-          started-by: '${CIRCLE_SHA1}'
-          task-definition: << parameters.family >>
-
-      - run:
-          name: Wait for migrations
-          command: |
-            echo "Finding task for ${CIRCLE_SHA1}"
-            ARN=$(aws ecs list-tasks \
-              --cluster example-staging \
-              --started-by "${CIRCLE_SHA1}" \
-              --query 'taskArns[]' \
-              --output text)
-            echo "Found: $ARN"
-
-            echo "Waiting..."
-            aws ecs wait tasks-stopped \
-              --cluster example-staging \
-              --tasks "$ARN"
-            echo "Task stopped."
-
-            echo "Checking..."
-            EXIT_CODE=$(aws ecs describe-tasks \
-              --cluster example-staging \
-              --tasks "$ARN" \
-              --query 'tasks[0].containers[0].exitCode' \
-              --output text)
-
-            if [ "$EXIT_CODE" == "0" ]; then
-              echo "Migrations complete"
-            else
-              echo "Migrations failed"
-              exit 1
-            fi
-
-  update-service:
-    parameters:
-      family:
-        type: string
-
-      service:
-        type: string
-
-    docker:
-      - image: circleci/python:3.8.3
-
-    steps:
-      - aws-cli/install
-
-      - aws-cli/configure
-
-      - aws-ecs/update-service:
-          family: << parameters.family >>
-          cluster-name: 'example-staging'
-          container-image-name-updates: 'container=example,tag=${CIRCLE_SHA1}'
-          service-name: << parameters.service >>
-          verify-revision-is-deployed: true
-
-workflows:
-  version: 2
-  build-test-deploy:
-    jobs:
-      - build:
-          context: suspenders-example-build
-      - test
-      - migrate:
-          family: example-staging-migrate
-          context: suspenders-example-staging-deploy
-          requires:
-            - build
-            - test
-      - update-service:
-          name: deploy-web
-          family: example-staging-web
-          service: web
-          context: suspenders-example-staging-deploy
-          requires:
-            - migrate
-      - update-service:
-          name: deploy-worker
-          family: example-staging-worker
-          service: worker
-          context: suspenders-example-staging-deploy
-          requires:
-            - migrate
+    - checkout
+    - restore_cache:
+        keys:
+        - "v1-bundle-{{ .Branch }}-{{ checksum \"Gemfile.lock\" }}"
+        - "v1-bundle-{{ .Branch }}-"
+        - "v1-bundle-"
+    - run:
+        command: |
+          bundle install --deployment \
+                          --retry=3 \
+                          --jobs=3
+        name: "Bundle Install"
+    - save_cache:
+        key: "v1-bundle-{{ .Branch }}-{{ checksum \"Gemfile.lock\" }}"
+        paths:
+        - vendor/bundle
+    - run:
+        command: "dockerize -wait tcp://localhost:5432 -timeout 1m"
+        name: "Wait for database"
+    - run:
+        command: "bin/rails db:setup"
+        name: "Database setup"
+    - run:
+        command: "COVERAGE=true bundle exec rake"
+        name: "Run tests"
+    - store_artifacts:
+        path: coverage
