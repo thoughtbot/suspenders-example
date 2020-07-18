@@ -88,28 +88,36 @@ jobs:
     - aws-cli/configure
     - aws-ecr/ecr-login
     - run:
-        command: "IMAGE_URL=$AWS_ECR_ACCOUNT_URL/example-app/example-app"
+        command: "export IMAGE_URL=$AWS_ECR_ACCOUNT_URL/example-app/example-app"
+        name: "Set image URL"
     - run:
         command: "docker pull $IMAGE_URL:$CIRCLE_BRANCH-compile || true"
+        name: "Pull branch build stage"
     - run:
         command: "docker pull $IMAGE_URL:$CIRCLE_SHA1-compile || true"
+        name: "Pull commimt build stage"
     - run:
         command: "docker build --cache-from $IMAGE_URL:$CIRCLE_BRANCH-compile --cache-from
           $IMAGE_URL:$CIRCLE_SHA1-compile --target compile --tag $IMAGE_URL:$CIRCLE_SHA1-compile
           ."
+        name: "Build stage"
     - run:
         command: "docker tag $IMAGE_URL:$CIRCLE_SHA1-compile $IMAGE_URL:$CIRCLE_BRANCH-compile"
+        name: "Tag build stage"
     - aws-ecr/push-image:
         repo: example-app/example-app
         tag: "$CIRCLE_SHA1-compile,$CIRCLE_BRANCH-compile"
     - run:
         command: "docker pull $IMAGE_URL:$CIRCLE_BRANCH || true"
+        name: "Pull branch release stage"
     - run:
         command: "docker pull $IMAGE_URL:$CIRCLE_SHA1 || true"
+        name: "Pull commit release stage"
     - run:
         command: "docker build --cache-from $IMAGE_URL:$CIRCLE_BRANCH-compile --cache-from
           $IMAGE_URL:$CIRCLE_SHA1-compile --cache-from $IMAGE_URL:$CIRCLE_BRANCH --cache-from
           $IMAGE_URL:$CIRCLE_SHA1 --tag $IMAGE_URL:$CIRCLE_SHA1 ."
+        name: "Release stage"
     - aws-ecr/push-image:
         repo: example-app/example-app
         tag: "$CIRCLE_BRANCH,$CIRCLE_SHA1"
