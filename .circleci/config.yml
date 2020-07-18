@@ -8,8 +8,7 @@ orbs:
 workflows:
   build-test-deploy:
     jobs:
-    - build:
-        repo: example-app/example-app
+    - build
     - test
     - run-task:
         aws-region: "us-east-1"
@@ -86,7 +85,7 @@ jobs:
     - aws-cli/configure
     - aws-ecr/ecr-login
     - run:
-        command: "IMAGE_URL=$AWS_ECR_ACCOUNT_URL/$AWS_ECR_AUTODEPLOY_REPO"
+        command: "IMAGE_URL=$AWS_ECR_ACCOUNT_URL/example-app/example-app"
     - run:
         command: "docker pull $IMAGE_URL:$CIRCLE_BRANCH-compile || true"
     - run:
