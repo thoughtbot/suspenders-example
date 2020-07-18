@@ -88,36 +88,40 @@ jobs:
     - aws-cli/configure
     - aws-ecr/ecr-login
     - run:
-        command: "export IMAGE_URL=\"$AWS_ECR_ACCOUNT_URL/example-app/example-app\""
-        name: "Set image URL"
-    - run:
-        command: "echo \"$IMAGE_URL:$CIRCLE_BRANCH-compile\" && docker pull $IMAGE_URL:$CIRCLE_BRANCH-compile
-          || true"
+        command: "echo \"$AWS_ECR_ACCOUNT_URL/example-app/example-app:$CIRCLE_BRANCH-compile\"
+          && docker pull $IMAGE_URL:$CIRCLE_BRANCH-compile || true"
         name: "Pull branch build stage"
     - run:
-        command: "docker pull $IMAGE_URL:$CIRCLE_SHA1-compile || true"
+        command: "docker pull $AWS_ECR_ACCOUNT_URL/example-app/example-app:$CIRCLE_SHA1-compile
+          || true"
         name: "Pull commimt build stage"
     - run:
-        command: "docker build --cache-from $IMAGE_URL:$CIRCLE_BRANCH-compile --cache-from
-          $IMAGE_URL:$CIRCLE_SHA1-compile --target compile --tag $IMAGE_URL:$CIRCLE_SHA1-compile
+        command: "docker build --cache-from $AWS_ECR_ACCOUNT_URL/example-app/example-app:$CIRCLE_BRANCH-compile
+          --cache-from $AWS_ECR_ACCOUNT_URL/example-app/example-app:$CIRCLE_SHA1-compile
+          --target compile --tag $AWS_ECR_ACCOUNT_URL/example-app/example-app:$CIRCLE_SHA1-compile
           ."
         name: "Build stage"
     - run:
-        command: "docker tag $IMAGE_URL:$CIRCLE_SHA1-compile $IMAGE_URL:$CIRCLE_BRANCH-compile"
+        command: "docker tag $AWS_ECR_ACCOUNT_URL/example-app/example-app:$CIRCLE_SHA1-compile
+          $AWS_ECR_ACCOUNT_URL/example-app/example-app:$CIRCLE_BRANCH-compile"
         name: "Tag build stage"
     - aws-ecr/push-image:
         repo: example-app/example-app
         tag: "$CIRCLE_SHA1-compile,$CIRCLE_BRANCH-compile"
     - run:
-        command: "docker pull $IMAGE_URL:$CIRCLE_BRANCH || true"
+        command: "docker pull $AWS_ECR_ACCOUNT_URL/example-app/example-app:$CIRCLE_BRANCH
+          || true"
         name: "Pull branch release stage"
     - run:
-        command: "docker pull $IMAGE_URL:$CIRCLE_SHA1 || true"
+        command: "docker pull $AWS_ECR_ACCOUNT_URL/example-app/example-app:$CIRCLE_SHA1
+          || true"
         name: "Pull commit release stage"
     - run:
-        command: "docker build --cache-from $IMAGE_URL:$CIRCLE_BRANCH-compile --cache-from
-          $IMAGE_URL:$CIRCLE_SHA1-compile --cache-from $IMAGE_URL:$CIRCLE_BRANCH --cache-from
-          $IMAGE_URL:$CIRCLE_SHA1 --tag $IMAGE_URL:$CIRCLE_SHA1 ."
+        command: "docker build --cache-from $AWS_ECR_ACCOUNT_URL/example-app/example-app:$CIRCLE_BRANCH-compile
+          --cache-from $AWS_ECR_ACCOUNT_URL/example-app/example-app:$CIRCLE_SHA1-compile
+          --cache-from $AWS_ECR_ACCOUNT_URL/example-app/example-app:$CIRCLE_BRANCH
+          --cache-from $AWS_ECR_ACCOUNT_URL/example-app/example-app:$CIRCLE_SHA1 --tag
+          $AWS_ECR_ACCOUNT_URL/example-app/example-app:$CIRCLE_SHA1 ."
         name: "Release stage"
     - aws-ecr/push-image:
         repo: example-app/example-app
@@ -125,6 +129,9 @@ jobs:
   run-task:
     docker:
     - image: "circleci/python:3.8.3"
+    - environment:
+        AWS_DEFAULT_REGION: "<< parameters.aws-region >>"
+        AWS_REGION: "<< parameters.aws-region >>"
     parameters:
       aws-region:
         type: string
@@ -139,11 +146,6 @@ jobs:
       subnet-ids:
         type: string
     steps:
-    - run:
-        command: |
-          AWS_DEFAULT_REGION=<< parameters.aws-region >>
-          AWS_REGION=<< parameters.aws-region >>
-        name: "Set AWS region"
     - aws-cli/install
     - aws-cli/configure
     - aws-ecs/update-task-definition:
