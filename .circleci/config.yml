@@ -88,7 +88,8 @@ jobs:
     - aws-cli/configure
     - aws-ecr/ecr-login
     - run:
-        command: "export IMAGE_URL=$AWS_ECR_ACCOUNT_URL/example-app/example-app"
+        command: "export IMAGE_URL=\"$AWS_ECR_ACCOUNT_URL/example-app/example-app\"
+          && echo \"$IMAGE_URL\""
         name: "Set image URL"
     - run:
         command: "docker pull $IMAGE_URL:$CIRCLE_BRANCH-compile || true"
