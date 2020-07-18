@@ -28,7 +28,7 @@ Rails.application.configure do
   config.public_file_server.headers = {
     "Cache-Control" => "public, max-age=31557600",
   }
-  config.force_ssl = true
+  # config.force_ssl = true
 
   unless ENV["PRECOMPILE"].present?
     config.action_mailer.smtp_settings = {
@@ -40,7 +40,7 @@ Rails.application.configure do
       port: "587",
       user_name: ENV.fetch("SMTP_USERNAME")
     }
-    config.middleware.use Rack::CanonicalHost, ENV.fetch("APPLICATION_HOST")
+    # config.middleware.use Rack::CanonicalHost, ENV.fetch("APPLICATION_HOST")
     config.action_mailer.default_url_options = { host: ENV.fetch("APPLICATION_HOST") }
     config.action_mailer.asset_host = ENV.fetch("ASSET_HOST", ENV.fetch("APPLICATION_HOST"))
     config.action_controller.asset_host = ENV.fetch("ASSET_HOST", ENV.fetch("APPLICATION_HOST"))
