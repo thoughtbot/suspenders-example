@@ -11,7 +11,6 @@ workflows:
     - build
     - test
     - run-task:
-        aws-region: "us-east-1"
         cluster: example-app-staging
         container-name: app
         family: example-app-staging-migrate
@@ -22,7 +21,6 @@ workflows:
         security-group-ids: "sg-059c7f8cb2b14b833,sg-0f950eac5657980cc"
         subnet-ids: "subnet-002f2eb48f28b63ef,subnet-07dad61c0356168f3,subnet-0109120d07487fa16"
     - aws-ecs/deploy-service-update:
-        aws-region: "us-east-1"
         cluster-name: example-app-staging
         container-image-name-updates: "container=app,tag=$CIRCLE_SHA1"
         family: example-app-staging-web
@@ -32,7 +30,6 @@ workflows:
         service-name: web
         verify-revision-is-deployed: true
     - aws-ecs/deploy-service-update:
-        aws-region: "us-east-1"
         cluster-name: example-app-staging
         container-image-name-updates: "container=app,tag=$CIRCLE_SHA1"
         family: example-app-staging-worker
@@ -42,7 +39,6 @@ workflows:
         service-name: worker
         verify-revision-is-deployed: true
     - run-task:
-        aws-region: "us-east-1"
         cluster: example-app-production
         container-name: app
         family: example-app-production-migrate
@@ -53,7 +49,6 @@ workflows:
         security-group-ids: "sg-07b81a4f255c35866,sg-06711d648c5c13764"
         subnet-ids: "subnet-0c4acc48a4d865b13,subnet-04129b8e3d26fe08e,subnet-03f7df8859e3c5fbc"
     - aws-ecs/deploy-service-update:
-        aws-region: "us-east-1"
         cluster-name: example-app-production
         container-image-name-updates: "container=app,tag=$CIRCLE_SHA1"
         family: example-app-production-web
@@ -63,7 +58,6 @@ workflows:
         service-name: web
         verify-revision-is-deployed: true
     - aws-ecs/deploy-service-update:
-        aws-region: "us-east-1"
         cluster-name: example-app-production
         container-image-name-updates: "container=app,tag=$CIRCLE_SHA1"
         family: example-app-production-worker
@@ -98,13 +92,14 @@ jobs:
     - run:
         command: "docker build --cache-from $AWS_ECR_ACCOUNT_URL/example-app/example-app:$CIRCLE_BRANCH-compile
           --cache-from $AWS_ECR_ACCOUNT_URL/example-app/example-app:$CIRCLE_SHA1-compile
-          --target compile --tag $AWS_ECR_ACCOUNT_URL/example-app/example-app:$CIRCLE_SHA1-compile
-          ."
+          --target compile --tag app:build ."
         name: "Build stage"
     - run:
-        command: "docker tag $AWS_ECR_ACCOUNT_URL/example-app/example-app:$CIRCLE_SHA1-compile
-          $AWS_ECR_ACCOUNT_URL/example-app/example-app:$CIRCLE_BRANCH-compile"
-        name: "Tag build stage"
+        command: "docker tag app:build $AWS_ECR_ACCOUNT_URL/example-app/example-app:$CIRCLE_BRANCH"
+        name: "Tag branch build"
+    - run:
+        command: "docker tag app:build $AWS_ECR_ACCOUNT_URL/example-app/example-app:$CIRCLE_SHA1"
+        name: "Tag commit build"
     - aws-ecr/push-image:
         repo: example-app/example-app
         tag: "$CIRCLE_SHA1-compile,$CIRCLE_BRANCH-compile"
@@ -121,8 +116,14 @@ jobs:
           --cache-from $AWS_ECR_ACCOUNT_URL/example-app/example-app:$CIRCLE_SHA1-compile
           --cache-from $AWS_ECR_ACCOUNT_URL/example-app/example-app:$CIRCLE_BRANCH
           --cache-from $AWS_ECR_ACCOUNT_URL/example-app/example-app:$CIRCLE_SHA1 --tag
-          $AWS_ECR_ACCOUNT_URL/example-app/example-app:$CIRCLE_SHA1 ."
+          app:release ."
         name: "Release stage"
+    - run:
+        command: "docker tag app:release $AWS_ECR_ACCOUNT_URL/example-app/example-app:$CIRCLE_BRANCH"
+        name: "Tag branch release"
+    - run:
+        command: "docker tag app:release $AWS_ECR_ACCOUNT_URL/example-app/example-app:$CIRCLE_SHA1"
+        name: "Tag commit release"
     - aws-ecr/push-image:
         repo: example-app/example-app
         tag: "$CIRCLE_BRANCH,$CIRCLE_SHA1"
@@ -130,8 +131,6 @@ jobs:
     docker:
     - image: "circleci/python:3.8.3"
     parameters:
-      aws-region:
-        type: string
       cluster:
         type: string
       container-name:
