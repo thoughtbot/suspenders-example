@@ -139,7 +139,7 @@ jobs:
         family: "<< parameters.family >>"
     - aws-ecs/run-task:
         cluster: "<< parameters.cluster >>"
-        security-group-ids: "<< parameters.security_group_ids >>"
+        security-group-ids: "<< parameters.security-group-ids >>"
         started-by: "${CIRCLE_SHA1}"
         subnet-ids: "<< parameters.subnet-ids >>"
         task-definition: "<< parameters.family >>"
