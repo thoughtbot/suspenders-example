@@ -97,8 +97,7 @@ jobs:
     - run:
         command: "docker tag $IMAGE_URL:$CIRCLE_SHA1-compile $IMAGE_URL:$CIRCLE_BRANCH-compile"
     - aws-ecr/push-image:
-        repo:
-          name: example-app/example-app
+        repo: example-app/example-app
         tag: "$CIRCLE_SHA1-compile,$CIRCLE_BRANCH-compile"
     - run:
         command: "docker pull $IMAGE_URL:$CIRCLE_BRANCH || true"
@@ -109,8 +108,7 @@ jobs:
           $IMAGE_URL:$CIRCLE_SHA1-compile --cache-from $IMAGE_URL:$CIRCLE_BRANCH --cache-from
           $IMAGE_URL:$CIRCLE_SHA1 --tag $IMAGE_URL:$CIRCLE_SHA1 ."
     - aws-ecr/push-image:
-        repo:
-          name: example-app/example-app
+        repo: example-app/example-app
         tag: "$CIRCLE_BRANCH,$CIRCLE_SHA1"
   run-task:
     docker:
