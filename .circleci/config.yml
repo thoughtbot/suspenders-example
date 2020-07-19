@@ -148,7 +148,8 @@ jobs:
         type: string
     steps:
     - aws-cli/install
-    - aws-cli/configure
+    - aws-cli/configure:
+        aws-region: AWS_REGION
     - aws-ecs/update-task-definition:
         container-image-name-updates: "container=<< parameters.container-name >>,tag=${CIRCLE_SHA1}"
         family: "<< parameters.family >>"
