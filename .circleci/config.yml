@@ -18,8 +18,8 @@ workflows:
         requires:
         - build
         - test
-        security-group-ids: "sg-059c7f8cb2b14b833,sg-0f950eac5657980cc"
-        subnet-ids: "subnet-002f2eb48f28b63ef,subnet-07dad61c0356168f3,subnet-0109120d07487fa16"
+        run: "{\"launchType\":\"EC2\",\"networkConfiguration\":{\"awsvpcConfiguration\":{\"securityGroups\":[\"sg-059c7f8cb2b14b833\",\"sg-0f950eac5657980cc\"],\"subnet\":[\"subnet-002f2eb48f28b63ef\",\"subnet-07dad61c0356168f3\",\"subnet-0109120d07487fa16\"]}},\"placementConstraints\":[{\"expression\":\"attribute:Role
+          == devops\",\"type\":\"memberOf\"}]}"
     - aws-ecs/deploy-service-update:
         cluster-name: example-app-staging
         container-image-name-updates: "container=app,tag=$CIRCLE_SHA1"
@@ -45,8 +45,8 @@ workflows:
         name: example-app-production-migrate
         requires:
         - staging-acceptance
-        security-group-ids: "sg-07b81a4f255c35866,sg-06711d648c5c13764"
-        subnet-ids: "subnet-0c4acc48a4d865b13,subnet-04129b8e3d26fe08e,subnet-03f7df8859e3c5fbc"
+        run: "{\"launchType\":\"EC2\",\"networkConfiguration\":{\"awsvpcConfiguration\":{\"securityGroups\":[\"sg-07b81a4f255c35866\",\"sg-06711d648c5c13764\"],\"subnet\":[\"subnet-0c4acc48a4d865b13\",\"subnet-04129b8e3d26fe08e\",\"subnet-03f7df8859e3c5fbc\"]}},\"placementConstraints\":[{\"expression\":\"attribute:Role
+          == devops\",\"type\":\"memberOf\"}]}"
     - aws-ecs/deploy-service-update:
         cluster-name: example-app-production
         container-image-name-updates: "container=app,tag=$CIRCLE_SHA1"
@@ -142,9 +142,7 @@ jobs:
         type: string
       family:
         type: string
-      security-group-ids:
-        type: string
-      subnet-ids:
+      run:
         type: string
     steps:
     - aws-cli/install
@@ -153,12 +151,13 @@ jobs:
     - aws-ecs/update-task-definition:
         container-image-name-updates: "container=<< parameters.container-name >>,tag=${CIRCLE_SHA1}"
         family: "<< parameters.family >>"
-    - aws-ecs/run-task:
-        cluster: "<< parameters.cluster >>"
-        security-group-ids: "<< parameters.security-group-ids >>"
-        started-by: "${CIRCLE_SHA1}"
-        subnet-ids: "<< parameters.subnet-ids >>"
-        task-definition: "<< parameters.family >>"
+    - run:
+        command: |
+          aws ecs run-task \
+            --cluster "<< parameters.cluster >>" \
+            --task-definition "<< parameters.family >>" \
+            --cli-input-json '<< parameters.run >>'
+        name: "Run task"
     - run:
         command: |
           echo "Finding task for ${CIRCLE_SHA1}"
