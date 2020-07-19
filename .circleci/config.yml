@@ -155,7 +155,7 @@ jobs:
         command: |
           aws ecs run-task \
             --cluster "<< parameters.cluster >>" \
-            --started-by "$CIRCLE_SHA" \
+            --started-by "$CIRCLE_SHA1" \
             --task-definition "<< parameters.family >>" \
             --cli-input-json '<< parameters.run >>'
         name: "Run task"
