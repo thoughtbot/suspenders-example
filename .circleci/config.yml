@@ -44,8 +44,8 @@ workflows:
         family: example-app-production-migrate
         name: example-app-production-migrate
         requires:
-        - build
-        - test
+        - example-app-staging-web
+        - example-app-staging-worker
         security-group-ids: "sg-07b81a4f255c35866,sg-06711d648c5c13764"
         subnet-ids: "subnet-0c4acc48a4d865b13,subnet-04129b8e3d26fe08e,subnet-03f7df8859e3c5fbc"
     - aws-ecs/deploy-service-update:
