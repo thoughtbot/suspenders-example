@@ -87,8 +87,8 @@ jobs:
         aws-region: AWS_REGION
     - aws-ecr/ecr-login
     - run:
-        command: "echo \"$AWS_ECR_ACCOUNT_URL/example-app/example-app:$CIRCLE_BRANCH-build\"
-          && docker pull $IMAGE_URL:$CIRCLE_BRANCH-build || true"
+        command: "docker pull $AWS_ECR_ACCOUNT_URL/example-app/example-app:$CIRCLE_BRANCH-build
+          || true"
         name: "Pull branch build stage"
     - run:
         command: "docker pull $AWS_ECR_ACCOUNT_URL/example-app/example-app:$CIRCLE_SHA1-build
