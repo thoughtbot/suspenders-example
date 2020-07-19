@@ -44,8 +44,7 @@ workflows:
         family: example-app-production-migrate
         name: example-app-production-migrate
         requires:
-        - example-app-staging-web
-        - example-app-staging-worker
+        - staging-acceptance
         security-group-ids: "sg-07b81a4f255c35866,sg-06711d648c5c13764"
         subnet-ids: "subnet-0c4acc48a4d865b13,subnet-04129b8e3d26fe08e,subnet-03f7df8859e3c5fbc"
     - aws-ecs/deploy-service-update:
@@ -66,6 +65,11 @@ workflows:
         - example-app-production-migrate
         service-name: worker
         verify-revision-is-deployed: true
+    - staging-acceptance:
+        requires:
+        - example-app-staging-web
+        - example-app-staging-worker
+        type: approval
   version: 2
 
 jobs:
@@ -88,7 +92,7 @@ jobs:
     - run:
         command: "docker pull $AWS_ECR_ACCOUNT_URL/example-app/example-app:$CIRCLE_SHA1-compile
           || true"
-        name: "Pull commimt build stage"
+        name: "Pull commit build stage"
     - run:
         command: "docker build --cache-from $AWS_ECR_ACCOUNT_URL/example-app/example-app:$CIRCLE_BRANCH-compile
           --cache-from $AWS_ECR_ACCOUNT_URL/example-app/example-app:$CIRCLE_SHA1-compile
