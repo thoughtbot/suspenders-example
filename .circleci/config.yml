@@ -86,27 +86,27 @@ jobs:
     - aws-cli/configure
     - aws-ecr/ecr-login
     - run:
-        command: "echo \"$AWS_ECR_ACCOUNT_URL/example-app/example-app:$CIRCLE_BRANCH-compile\"
-          && docker pull $IMAGE_URL:$CIRCLE_BRANCH-compile || true"
+        command: "echo \"$AWS_ECR_ACCOUNT_URL/example-app/example-app:$CIRCLE_BRANCH-build\"
+          && docker pull $IMAGE_URL:$CIRCLE_BRANCH-build || true"
         name: "Pull branch build stage"
     - run:
-        command: "docker pull $AWS_ECR_ACCOUNT_URL/example-app/example-app:$CIRCLE_SHA1-compile
+        command: "docker pull $AWS_ECR_ACCOUNT_URL/example-app/example-app:$CIRCLE_SHA1-build
           || true"
         name: "Pull commit build stage"
     - run:
-        command: "docker build --cache-from $AWS_ECR_ACCOUNT_URL/example-app/example-app:$CIRCLE_BRANCH-compile
-          --cache-from $AWS_ECR_ACCOUNT_URL/example-app/example-app:$CIRCLE_SHA1-compile
+        command: "docker build --cache-from $AWS_ECR_ACCOUNT_URL/example-app/example-app:$CIRCLE_BRANCH-build
+          --cache-from $AWS_ECR_ACCOUNT_URL/example-app/example-app:$CIRCLE_SHA1-build
           --target compile --tag app:build ."
         name: "Build stage"
     - run:
-        command: "docker tag app:build $AWS_ECR_ACCOUNT_URL/example-app/example-app:$CIRCLE_BRANCH"
+        command: "docker tag app:build $AWS_ECR_ACCOUNT_URL/example-app/example-app:$CIRCLE_BRANCH-build"
         name: "Tag branch build"
     - run:
-        command: "docker tag app:build $AWS_ECR_ACCOUNT_URL/example-app/example-app:$CIRCLE_SHA1"
+        command: "docker tag app:build $AWS_ECR_ACCOUNT_URL/example-app/example-app:$CIRCLE_SHA1-build"
         name: "Tag commit build"
     - aws-ecr/push-image:
         repo: example-app/example-app
-        tag: "$CIRCLE_SHA1-compile,$CIRCLE_BRANCH-compile"
+        tag: "$CIRCLE_SHA1-build,$CIRCLE_BRANCH-build"
     - run:
         command: "docker pull $AWS_ECR_ACCOUNT_URL/example-app/example-app:$CIRCLE_BRANCH
           || true"
@@ -116,8 +116,8 @@ jobs:
           || true"
         name: "Pull commit release stage"
     - run:
-        command: "docker build --cache-from $AWS_ECR_ACCOUNT_URL/example-app/example-app:$CIRCLE_BRANCH-compile
-          --cache-from $AWS_ECR_ACCOUNT_URL/example-app/example-app:$CIRCLE_SHA1-compile
+        command: "docker build --cache-from $AWS_ECR_ACCOUNT_URL/example-app/example-app:$CIRCLE_BRANCH-build
+          --cache-from $AWS_ECR_ACCOUNT_URL/example-app/example-app:$CIRCLE_SHA1-build
           --cache-from $AWS_ECR_ACCOUNT_URL/example-app/example-app:$CIRCLE_BRANCH
           --cache-from $AWS_ECR_ACCOUNT_URL/example-app/example-app:$CIRCLE_SHA1 --tag
           app:release ."
