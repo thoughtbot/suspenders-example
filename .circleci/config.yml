@@ -18,7 +18,7 @@ workflows:
         requires:
         - build
         - test
-        run: "{\"launchType\":\"EC2\",\"networkConfiguration\":{\"awsvpcConfiguration\":{\"securityGroups\":[\"sg-059c7f8cb2b14b833\",\"sg-0f950eac5657980cc\"],\"subnet\":[\"subnet-002f2eb48f28b63ef\",\"subnet-07dad61c0356168f3\",\"subnet-0109120d07487fa16\"]}},\"placementConstraints\":[{\"expression\":\"attribute:Role
+        run: "{\"launchType\":\"EC2\",\"networkConfiguration\":{\"awsvpcConfiguration\":{\"securityGroups\":[\"sg-059c7f8cb2b14b833\",\"sg-0f950eac5657980cc\"],\"subnets\":[\"subnet-002f2eb48f28b63ef\",\"subnet-07dad61c0356168f3\",\"subnet-0109120d07487fa16\"]}},\"placementConstraints\":[{\"expression\":\"attribute:Role
           == devops\",\"type\":\"memberOf\"}]}"
     - aws-ecs/deploy-service-update:
         cluster-name: example-app-staging
@@ -45,7 +45,7 @@ workflows:
         name: example-app-production-migrate
         requires:
         - staging-acceptance
-        run: "{\"launchType\":\"EC2\",\"networkConfiguration\":{\"awsvpcConfiguration\":{\"securityGroups\":[\"sg-07b81a4f255c35866\",\"sg-06711d648c5c13764\"],\"subnet\":[\"subnet-0c4acc48a4d865b13\",\"subnet-04129b8e3d26fe08e\",\"subnet-03f7df8859e3c5fbc\"]}},\"placementConstraints\":[{\"expression\":\"attribute:Role
+        run: "{\"launchType\":\"EC2\",\"networkConfiguration\":{\"awsvpcConfiguration\":{\"securityGroups\":[\"sg-07b81a4f255c35866\",\"sg-06711d648c5c13764\"],\"subnets\":[\"subnet-0c4acc48a4d865b13\",\"subnet-04129b8e3d26fe08e\",\"subnet-03f7df8859e3c5fbc\"]}},\"placementConstraints\":[{\"expression\":\"attribute:Role
           == devops\",\"type\":\"memberOf\"}]}"
     - aws-ecs/deploy-service-update:
         cluster-name: example-app-production
