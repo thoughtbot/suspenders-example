@@ -83,7 +83,8 @@ jobs:
     - setup_remote_docker
     - checkout
     - aws-cli/install
-    - aws-cli/configure
+    - aws-cli/configure:
+        aws-region: AWS_REGION
     - aws-ecr/ecr-login
     - run:
         command: "echo \"$AWS_ECR_ACCOUNT_URL/example-app/example-app:$CIRCLE_BRANCH-build\"
