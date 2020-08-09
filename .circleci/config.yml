@@ -49,7 +49,7 @@ workflows:
         - example-app-staging-example-app-migrate
         service-name: example-app-staging-worker
         verify-revision-is-deployed: true
-    - tag-image:
+    - aws-ecr/push-image:
         filters:
           branches:
             only:
@@ -98,7 +98,7 @@ workflows:
         - example-app-production-example-app-migrate
         service-name: example-app-production-worker
         verify-revision-is-deployed: true
-    - tag-image:
+    - aws-ecr/push-image:
         filters:
           branches:
             only:
