@@ -22,7 +22,7 @@ workflows:
         requires:
         - build
         - test
-        run: "{\"networkConfiguration\":{\"awsvpcConfiguration\":{\"securityGroups\":[\"sg-02f435311e9a0b864\"],\"subnets\":[\"subnet-00ba3c7f5b3b051ed\",\"subnet-04ee7526beaf76e50\",\"subnet-0d6f82a49e814834a\"]},\"launchType\":\"FARGATE\"}}"
+        run: "{\"launchType\":\"FARGATE\",\"networkConfiguration\":{\"awsvpcConfiguration\":{\"securityGroups\":[\"sg-02f435311e9a0b864\"],\"subnets\":[\"subnet-00ba3c7f5b3b051ed\",\"subnet-04ee7526beaf76e50\",\"subnet-0d6f82a49e814834a\"]}}}"
     - aws-ecs/deploy-service-update:
         cluster-name: example-app-staging
         container-image-name-updates: "container=example-app,tag=$CIRCLE_SHA1"
@@ -71,7 +71,7 @@ workflows:
         name: example-app-production-example-app-migrate
         requires:
         - staging-acceptance
-        run: "{\"networkConfiguration\":{\"awsvpcConfiguration\":{\"securityGroups\":[\"sg-0a659ab16a2dcdb58\"],\"subnets\":[\"subnet-00fde99554dc70f7d\",\"subnet-043719a810ad0602f\",\"subnet-0b0207c8e8379462a\"]},\"launchType\":\"FARGATE\"}}"
+        run: "{\"launchType\":\"FARGATE\",\"networkConfiguration\":{\"awsvpcConfiguration\":{\"securityGroups\":[\"sg-0a659ab16a2dcdb58\"],\"subnets\":[\"subnet-00fde99554dc70f7d\",\"subnet-043719a810ad0602f\",\"subnet-0b0207c8e8379462a\"]}}}"
     - aws-ecs/deploy-service-update:
         cluster-name: example-app-production
         container-image-name-updates: "container=example-app,tag=$CIRCLE_SHA1"
