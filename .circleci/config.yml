@@ -49,7 +49,7 @@ workflows:
         - example-app-staging-example-app-migrate
         service-name: example-app-staging-worker
         verify-revision-is-deployed: true
-    - aws-ecr/push-image:
+    - tag-image:
         filters:
           branches:
             only:
@@ -98,7 +98,7 @@ workflows:
         - example-app-production-example-app-migrate
         service-name: example-app-production-worker
         verify-revision-is-deployed: true
-    - aws-ecr/push-image:
+    - tag-image:
         filters:
           branches:
             only:
@@ -233,6 +233,32 @@ jobs:
             exit 1
           fi
         name: "Wait for task"
+  tag-image:
+    docker:
+    - image: "circleci/python:3.8.3"
+    parameters:
+      repo:
+        type: string
+      tag:
+        type: string
+    steps:
+    - aws-cli/install
+    - aws-cli/configure:
+        aws-region: AWS_REGION
+    - run:
+        command: |
+          docker pull \
+            "$AWS_ECR_ACCOUNT_URL/<< parameters.repo >>:$CIRCLE_SHA1"
+        name: "Pull image"
+    - run:
+        command: |
+          docker tag \
+            "$AWS_ECR_ACCOUNT_URL/<< parameters.repo>>:$CIRCLE_SHA1" \
+            "$AWS_ECR_ACCOUNT_URL/<< parameters.repo>>:<< parameters.tag >>"
+        name: "Tag image"
+    - aws-ecr/push-image:
+        repo: "<< parameters.repo >>"
+        tag: "<< parameters.tag >>"
   test:
     docker:
     - environment:
