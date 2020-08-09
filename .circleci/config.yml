@@ -12,63 +12,107 @@ workflows:
     - test
     - run-task:
         cluster: example-app-staging
-        container-name: app
-        family: example-app-staging-migrate
-        name: example-app-staging-migrate
+        container-name: example-app
+        family: example-app-staging-example-app-migrate
+        filters:
+          branches:
+            only:
+            - main
+        name: example-app-staging-example-app-migrate
         requires:
         - build
         - test
-        run: "{\"launchType\":\"EC2\",\"networkConfiguration\":{\"awsvpcConfiguration\":{\"securityGroups\":[\"sg-059c7f8cb2b14b833\",\"sg-0f950eac5657980cc\"],\"subnets\":[\"subnet-002f2eb48f28b63ef\",\"subnet-07dad61c0356168f3\",\"subnet-0109120d07487fa16\"]}},\"overrides\":{\"memory\":\"128\"},\"placementConstraints\":[{\"expression\":\"attribute:Role
-          == devops\",\"type\":\"memberOf\"}]}"
+        run: "{\"networkConfiguration\":{\"awsvpcConfiguration\":{\"securityGroups\":[\"sg-02f435311e9a0b864\"],\"subnets\":[\"subnet-00ba3c7f5b3b051ed\",\"subnet-04ee7526beaf76e50\",\"subnet-0d6f82a49e814834a\"]}}}"
     - aws-ecs/deploy-service-update:
         cluster-name: example-app-staging
-        container-image-name-updates: "container=app,tag=$CIRCLE_SHA1"
-        family: example-app-staging-web
-        name: example-app-staging-web
+        container-image-name-updates: "container=example-app,tag=$CIRCLE_SHA1"
+        family: example-app-staging-example-app-web
+        filters:
+          branches:
+            only:
+            - main
+        name: example-app-staging-example-app-web
         requires:
-        - example-app-staging-migrate
-        service-name: web
+        - example-app-staging-example-app-migrate
+        service-name: example-app-staging-web
         verify-revision-is-deployed: true
     - aws-ecs/deploy-service-update:
         cluster-name: example-app-staging
-        container-image-name-updates: "container=app,tag=$CIRCLE_SHA1"
-        family: example-app-staging-worker
-        name: example-app-staging-worker
+        container-image-name-updates: "container=example-app,tag=$CIRCLE_SHA1"
+        family: example-app-staging-example-app-worker
+        filters:
+          branches:
+            only:
+            - main
+        name: example-app-staging-example-app-worker
         requires:
-        - example-app-staging-migrate
-        service-name: worker
+        - example-app-staging-example-app-migrate
+        service-name: example-app-staging-worker
         verify-revision-is-deployed: true
+    - tag-image:
+        filters:
+          branches:
+            only:
+            - main
+        name: tag-staging
+        repo: example-app/example-app
+        requires:
+        - example-app-staging-example-app-web
+        - example-app-staging-example-app-worker
+        tag: staging
     - run-task:
         cluster: example-app-production
-        container-name: app
-        family: example-app-production-migrate
-        name: example-app-production-migrate
+        container-name: example-app
+        family: example-app-production-example-app-migrate
+        filters:
+          branches:
+            only:
+            - main
+        name: example-app-production-example-app-migrate
         requires:
         - staging-acceptance
-        run: "{\"launchType\":\"EC2\",\"networkConfiguration\":{\"awsvpcConfiguration\":{\"securityGroups\":[\"sg-07b81a4f255c35866\",\"sg-06711d648c5c13764\"],\"subnets\":[\"subnet-0c4acc48a4d865b13\",\"subnet-04129b8e3d26fe08e\",\"subnet-03f7df8859e3c5fbc\"]}},\"overrides\":{\"memory\":\"128\"},\"placementConstraints\":[{\"expression\":\"attribute:Role
-          == devops\",\"type\":\"memberOf\"}]}"
+        run: "{\"networkConfiguration\":{\"awsvpcConfiguration\":{\"securityGroups\":[\"sg-0a659ab16a2dcdb58\"],\"subnets\":[\"subnet-00fde99554dc70f7d\",\"subnet-043719a810ad0602f\",\"subnet-0b0207c8e8379462a\"]}}}"
     - aws-ecs/deploy-service-update:
         cluster-name: example-app-production
-        container-image-name-updates: "container=app,tag=$CIRCLE_SHA1"
-        family: example-app-production-web
-        name: example-app-production-web
+        container-image-name-updates: "container=example-app,tag=$CIRCLE_SHA1"
+        family: example-app-production-example-app-web
+        filters:
+          branches:
+            only:
+            - main
+        name: example-app-production-example-app-web
         requires:
-        - example-app-production-migrate
-        service-name: web
+        - example-app-production-example-app-migrate
+        service-name: example-app-production-web
         verify-revision-is-deployed: true
     - aws-ecs/deploy-service-update:
         cluster-name: example-app-production
-        container-image-name-updates: "container=app,tag=$CIRCLE_SHA1"
-        family: example-app-production-worker
-        name: example-app-production-worker
+        container-image-name-updates: "container=example-app,tag=$CIRCLE_SHA1"
+        family: example-app-production-example-app-worker
+        filters:
+          branches:
+            only:
+            - main
+        name: example-app-production-example-app-worker
         requires:
-        - example-app-production-migrate
-        service-name: worker
+        - example-app-production-example-app-migrate
+        service-name: example-app-production-worker
         verify-revision-is-deployed: true
+    - tag-image:
+        filters:
+          branches:
+            only:
+            - main
+        name: tag-production
+        repo: example-app/example-app
+        requires:
+        - example-app-production-example-app-web
+        - example-app-production-example-app-worker
+        tag: production
     - staging-acceptance:
         requires:
-        - example-app-staging-web
-        - example-app-staging-worker
+        - example-app-staging-example-app-web
+        - example-app-staging-example-app-worker
         type: approval
   version: 2
 
